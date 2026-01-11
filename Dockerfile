@@ -1,33 +1,40 @@
+# Estágio 1: Build
 FROM golang:1.22-alpine AS build
 
-WORKDIR /app
-
-COPY ./controllers/ /app/controllers/
-COPY ./database/ /app/database/
-COPY ./models/ /app/models/
-COPY ./routes/ /app/routes/
-COPY ./main.go /app/main.go
-COPY ./go.mod /app/go.mod
-COPY ./go.sum /app/go.sum
-
-RUN go build main.go
-
-FROM alpine:latest AS production
-
-EXPOSE 8080
+# Instala git para baixar dependências se necessário
+RUN apk add --no-cache git
 
 WORKDIR /app
 
-ENV PORT 8080
-ENV DB_HOST postgres
-ENV DB_USER root
-ENV DB_PASSWORD root
-ENV DB_NAME root
-ENV DB_PORT 5432
+# Aproveita cache das camadas do Docker para dependências
+COPY go.mod go.sum ./
+RUN go mod download
 
+# Copia o código e compila
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
+
+# Estágio 2: Produção (Final)
+FROM alpine:3.19 AS production
+
+# Certificados para chamadas externas seguras
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+# Configurações de ambiente
+ENV PORT=8080 \
+    DB_HOST=postgres \
+    DB_USER=root \
+    DB_PASSWORD=root \
+    DB_NAME=root \
+    DB_PORT=5432
+
+# Copia apenas os arquivos estáticos e o binário final
 COPY ./assets/ /app/assets/
 COPY ./templates/ /app/templates/
-
 COPY --from=build /app/main /app/main
+
+EXPOSE 8080
 
 CMD [ "./main" ]
