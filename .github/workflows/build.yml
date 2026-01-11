@@ -2,7 +2,7 @@ name: "Construção do artefato"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -17,11 +17,11 @@ jobs:
       - name: Docker login
         uses: docker/login-action@v3
         with:
-          username: cviniciussdias
+          username: kelwinsouza
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Constrói e envia imagem docker
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: cviniciussdias/projeto_go:latest,cviniciussdias/projeto_go:${{ github.sha }}
+          tags: kelwinsouza/projeto_go:latest,kelwinsouza/projeto_go:${{ github.sha }}
